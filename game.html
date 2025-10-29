@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Quiz Dân Gian Việt Nam</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#F6EBD9; --card:#FFF8F1; --accent:#a66b2a; --accent-dark:#7a4b20; --good:#2E8B57; --bad:#c0392b;
+      --glass: rgba(255,255,255,0.7);
+    }
+    *{box-sizing:border-box}
+    body{font-family:'Noto Serif',serif;background:linear-gradient(180deg,var(--bg),#F0E5D6);min-height:100vh;margin:0;display:flex;align-items:center;justify-content:center;padding:32px}
+    .app{width:100%;max-width:900px}
+    .card{background:var(--card);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.12);padding:28px}
+
+    /* Start screen */
+    .start-screen{display:flex;flex-direction:column;gap:20px;align-items:center;justify-content:center;text-align:center;padding:48px}
+    .title{font-size:36px;color:var(--accent-dark);letter-spacing:1px}
+    .subtitle{color:#6b4d2b}
+    .start-btn{background:linear-gradient(180deg,var(--accent),var(--accent-dark));color:white;padding:14px 28px;border-radius:999px;border:none;font-size:18px;cursor:pointer;box-shadow:0 6px 18px rgba(122,75,32,0.25)}
+    .start-btn:hover{transform:translateY(-3px)}
+
+    /* Question screen */
+    .question-screen{display:none;position:relative;padding:20px}
+    .meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+    .meta .left{font-weight:700;color:var(--accent-dark)}
+    .timer{background:var(--glass);padding:6px 10px;border-radius:999px;font-weight:700}
+    .question-text{font-size:20px;margin:18px 0;color:#3e2f1f}
+    .options{display:grid;grid-template-columns:repeat(1,1fr);gap:12px}
+    @media(min-width:600px){.options{grid-template-columns:repeat(2,1fr)}}
+    .opt{background:white;border:2px solid #F0E0D0;padding:12px;border-radius:12px;cursor:pointer;transition:all .18s;font-weight:600}
+    .opt:hover{transform:translateY(-3px)}
+    .opt.disabled{pointer-events:none;opacity:0.9}
+    .opt.correct{background:linear-gradient(90deg,#e9f7ef,#dff3ea);border-color:var(--good);color:var(--good)}
+    .opt.wrong{background:linear-gradient(90deg,#fdecea,#fbe6e3);border-color:var(--bad);color:var(--bad)}
+
+    .controls{display:flex;justify-content:space-between;align-items:center;margin-top:16px}
+    .next-btn{padding:10px 18px;border-radius:999px;border:none;background:#ccc;color:#333;cursor:not-allowed}
+    .next-btn.enabled{background:var(--accent);color:white;cursor:pointer}
+
+    /* Result screen */
+    .result-screen{display:none;text-align:center;padding:36px}
+    .result-badge{width:180px;height:180px;border-radius:999px;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 30% 20%,#fff, #FFF3E6);border:6px solid var(--accent)}
+    .score{font-size:42px;font-weight:700;color:var(--accent-dark)}
+    .result-msg{margin-top:12px;font-size:18px}
+    .result-actions{display:flex;gap:12px;justify-content:center;margin-top:18px;flex-wrap:wrap}
+    .btn{padding:10px 14px;border-radius:10px;border:none;background:var(--accent);color:white;cursor:pointer}
+    .btn.secondary{background:#eee;color:var(--accent-dark)}
+
+    /* small decorative */
+    .bg-pattern{position:absolute;inset:0;pointer-events:none;opacity:0.06;background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect fill="%23F6EBD9" width="100%" height="100%"/><g fill="%23A66B2A"><circle cx="30" cy="30" r="6"/><circle cx="80" cy="80" r="6"/></g></svg>');border-radius:16px}
+
+    footer{margin-top:12px;text-align:center;color:#7a5a3d;font-size:13px}
+  </style>
+</head>
+<body>
+<div class="app card" id="app">
+
+  <!-- START -->
+  <div id="startScreen" class="start-screen">
+    <div style="width:80px;height:80px;border-radius:12px;background:linear-gradient(135deg,#fff,#FFEFD6);display:flex;align-items:center;justify-content:center;border:4px solid var(--accent);font-size:36px">☸️</div>
+    <div class="title">Quiz Dân Gian Việt Nam</div>
+    <div class="subtitle">Hỏi — Đáp về tục ngữ, dân ca, thành ngữ, văn hóa dân gian</div>
+    <div style="display:flex;gap:12px;align-items:center">
+      <label style="font-weight:700;color:#5b402a">Chọn cấp độ:</label>
+      <select id="selectLevel">
+        <option value="1">Cấp 1 — Dễ</option>
+        <option value="2">Cấp 2 — Trung bình</option>
+        <option value="3">Cấp 3 — Khó</option>
+      </select>
+    </div>
+    <button id="startBtn" class="start-btn">Bắt đầu chơi</button>
+  </div>
+
+  <!-- QUESTION -->
+  <div id="questionScreen" class="question-screen">
+    <div class="bg-pattern"></div>
+    <div class="meta">
+      <div class="left"><span id="levelLabel">Quiz Dân Gian – Cấp độ 1</span></div>
+      <div class="timer" id="timer">15s</div>
+    </div>
+
+    <div class="meta" style="margin-top:6px">
+      <div class="left">Câu <span id="qIndex">1</span>/<span id="qTotal">10</span></div>
+      <div class="left">Điểm: <span id="score">0</span></div>
+    </div>
+
+    <div class="question-text" id="questionText">Nội dung câu hỏi ở đây</div>
+    <div class="options" id="options"></div>
+
+    <div class="controls">
+      <div></div>
+      <button id="nextBtn" class="next-btn">Next</button>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div id="resultScreen" class="result-screen">
+    <div class="result-badge">
+      <div>
+        <div style="font-size:12px;color:#7a5a3d">KẾT QUẢ</div>
+        <div class="score" id="finalScore">0/10</div>
+      </div>
+    </div>
+    <div class="result-msg" id="resultMsg">Bạn đã ...</div>
+    <div class="result-actions">
+      <button id="replayBtn" class="btn">Chơi lại</button>
+      <button id="nextLevelBtn" class="btn">Qua màn</button>
+      <button id="homeBtn" class="btn secondary">Về trang chủ</button>
+    </div>
+  </div>
+
+  <footer>Phong cách dân gian — đơn giản & thuần HTML/CSS/JS</footer>
+</div>
+
+<script>
+  // -----------------------------
+  // Dữ liệu bộ đề (3 cấp, mỗi cấp 10 câu)
+  // -----------------------------
+  const quizData = [
+    {
+      level:1,
+      questions: [
+        {id:1, question:"Con gì đầu rồng đuôi tôm?", options:["Con rắn","Con cá chép","Con rồng","Con tôm"], correct:1},
+        {id:2, question:"Tục ngữ: 'Có công mài sắt' tiếp câu là?", options:["Có ngày nên kim","Mài sắt thành kim","Trăm năm mới xong","Ăn cơm no"], correct:1},
+        {id:3, question:"'Ăn quả nhớ kẻ trồng cây' ý nói gì?", options:["Ăn uống đúng giờ","Biết ơn người đã giúp","Trồng cây ăn quả","Không quên nhà"], correct:1},
+        {id:4, question:"Dân ca ví dặm thuộc vùng nào?", options:["Miền Bắc","Miền Trung","Miền Nam","Tây Nguyên"], correct:1},
+        {id: 5,
+          question: "Câu đối: 'Hoa lúp xúp' là loại gì?",
+          options: ["Bài hát","Điệu múa","Dân ca","Trò chơi"],
+          correct: 2},
+        {id:6, question:"Loại nhạc cụ đàn đá phổ biến ở đâu?", options:["Tây Nguyên","Miền Bắc","Đồng bằng sông Cửu Long","Miền Trung"], correct:0},
+        {id:7, question:"Lễ hội gắn với trâu, bò nhiều ở vùng nào?", options:["Đồng bằng","Tây Nguyên","Miền Trung","Miền Bắc"], correct:1},
+        {id:8, question:"Điển tích 'Lạc vào rừng' thường liên quan đến?", options:["Mất đường","Yêu đời","Sợ rừng","Thiên nhiên"], correct:0},
+        {id:9, question:"Tục ngữ: 'Nước mắt chảy vào trong' nghĩa là?", options:["Giấu nỗi buồn","Khóc to","Rửa mặt","Vui mừng"], correct:0},
+        {id:10, question:"Đồ ăn truyền thống thường xuất hiện trong dịp Tết?", options:["Bánh chưng","Pizza","Sushi","Hamburger"], correct:0}
+      ]
+    },
+    {
+      level:2,
+      questions: [
+        {id:1, question:"Tục ngữ: 'Gần mực thì đen' tiếp câu là?", options:["Gần đèn thì rạng","Gần bùn thì bẩn","Xa lánh người xấu","Không ai biết"], correct:1},
+        {id:2, question:"Ca dao 'Con cò' nói tới hình ảnh gì?", options:["Con chim cò","Người mẹ vất vả","Người lính","Nông dân"], correct:1},
+        {id:3, question:"Hát xoan là di sản của tỉnh nào?", options:["Phú Thọ","Hà Nội","Thanh Hóa","Nghệ An"], correct:0},
+        {id:4, question:"Trò chơi dân gian 'kéo co' thường diễn ra khi nào?", options:["Lễ hội","Đám cưới","Tết","Cả A và C"], correct:3},
+        {id:5, question:"Thành ngữ 'nước đến chân' nghĩa là?", options:["Sống yên ổn","Gặp nguy hiểm khẩn cấp","Đi bơi","Ăn no"], correct:1},
+        {id:6, question:"Vật dụng 'ánh trăng' thường liên tưởng tới gì?", options:["Lãng mạn","Sợ hãi","Ánh sáng","Mưa"], correct:0},
+        {id:7, question:"Lễ hội chọi trâu tổ chức ở đâu nổi tiếng?", options:["Hội Đồ Sơn","Hội Chùa Hương","Hội Gióng","Hải Phòng (Đồ Sơn)"], correct:3},
+        {id:8, question:"'Ăn cơm mới, rửa bát cũ' nghĩa là?", options:["Biết ơn tổ tiên","Chia sẻ","Ăn xong dọn dẹp","Tiết kiệm"], correct:2},
+        {id:9, question:"Thời gian tính theo âm lịch dùng để?", options:["Canh giờ lễ tục","Chỉ ngày nghỉ","Không dùng","Chỉ giờ học"], correct:0},
+        {id:10, question:"Họa tiết 'hoa văn trống đồng' là của nền văn hóa nào?", options:["Đông Sơn","Chămpa","Hoa Lư","Triều đình"], correct:0}
+      ]
+    },
+    {
+      level:3,
+      questions: [
+        {id:1, question:"Câu 'Ngựa non háu đá' mô tả tính cách nào?", options:["Dũng cảm","Nóng nảy, thích tranh đua","Nhút nhát","Thông minh"], correct:1},
+        {id:2, question:"Tục ngữ: 'Một giọt máu đào hơn ao nước lã' nghĩa là?", options:["Tình thân quan trọng hơn lợi ích xa lạ","Nước không sạch","Gia đình không quan trọng","Một người cô đơn"], correct:0},
+        {id:3, question:"Khúc hát ru truyền thống thường dùng để?", options:["Ru trẻ ngủ","Lễ hội","Chiến tranh","Cày ruộng"], correct:0},
+        {id:4, question:"Dân ca Quan họ gốc ở tỉnh nào?", options:["Bắc Ninh","Hà Nam","Hòa Bình","Bắc Giang"], correct:0},
+        {id:5, question:"Thần thoại 'Sơn Tinh - Thủy Tinh' liên quan tới?", options:["Thiên tai và tình yêu","Chiến tranh","Lễ hội","Nông nghiệp"], correct:0},
+        {id:6, question:"Loại hình múa Rối nước có nguồn gốc từ?", options:["Nông dân và lễ hội lúa nước","Nhà vua","Tôn giáo","Hàng hải"], correct:0},
+        {id:7, question:"Vật dụng dân gian 'nón quai thao' đặc trưng của vùng?", options:["Quan họ Bắc Ninh","Miền Trung","Miền Nam","Tây Bắc"], correct:0},
+        {id:8, question:"Câu tục ngữ: 'Được voi mất tiền' nghĩa là?", options:["Được lợi nhưng mất nhiều hơn","Kiếm tiền dễ dàng","Giữ được tiền","Không liên quan"], correct:0},
+        {id:9, question:"Hình tượng truyền thống 'Lạc Long Quân' là ai?", options:["Vua nước ngoài","Thủy tổ của người Việt","Một thi sĩ","Một loài vật"], correct:1},
+        {id:10, question:"Lễ hội 'Hội Lim' nổi tiếng với loại hình nào?", options:["Quan họ","Múa rối","Kéo co","Chọi gà"], correct:0}
+      ]
+    }
+  ];
+
+  // -----------------------------
+  // State
+  // -----------------------------
+  let currentLevel = 1;
+  let questions = [];
+  let currentIndex = 0; // 0-based
+  let score = 0;
+  let selectedOption = null;
+  let timerInterval = null;
+  let timeLeft = 15; // seconds per question (can change)
+  const QUESTIONS_PER_LEVEL = 10;
+
+  // Elements
+  const startScreen = document.getElementById('startScreen');
+  const questionScreen = document.getElementById('questionScreen');
+  const resultScreen = document.getElementById('resultScreen');
+  const startBtn = document.getElementById('startBtn');
+  const selectLevel = document.getElementById('selectLevel');
+  const levelLabel = document.getElementById('levelLabel');
+  const timerEl = document.getElementById('timer');
+  const qIndexEl = document.getElementById('qIndex');
+  const qTotalEl = document.getElementById('qTotal');
+  const questionText = document.getElementById('questionText');
+  const optionsEl = document.getElementById('options');
+  const nextBtn = document.getElementById('nextBtn');
+  const scoreEl = document.getElementById('score');
+  const finalScore = document.getElementById('finalScore');
+  const resultMsg = document.getElementById('resultMsg');
+  const replayBtn = document.getElementById('replayBtn');
+  const nextLevelBtn = document.getElementById('nextLevelBtn');
+  const homeBtn = document.getElementById('homeBtn');
+
+  // -----------------------------
+  // Helpers
+  // -----------------------------
+  function getQuestionsForLevel(level){
+    const data = quizData.find(d=>d.level===level);
+    if(!data) return [];
+    // clone and (optionally) shuffle
+    const copy = JSON.parse(JSON.stringify(data.questions));
+    // ensure length QUESTIONS_PER_LEVEL (if less, repeat or slice)
+    while(copy.length < QUESTIONS_PER_LEVEL){ copy.push(...JSON.parse(JSON.stringify(data.questions))); }
+    // simple shuffle
+    for(let i=copy.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [copy[i],copy[j]]=[copy[j],copy[i]] }
+    return copy.slice(0,QUESTIONS_PER_LEVEL);
+  }
+
+  function showStart(){ startScreen.style.display='flex'; questionScreen.style.display='none'; resultScreen.style.display='none'; }
+  function showQuestion(){ startScreen.style.display='none'; questionScreen.style.display='block'; resultScreen.style.display='none'; }
+  function showResult(){ startScreen.style.display='none'; questionScreen.style.display='none'; resultScreen.style.display='block'; }
+
+  function startGame(){
+    currentLevel = parseInt(selectLevel.value,10) || 1;
+    questions = getQuestionsForLevel(currentLevel);
+    currentIndex = 0; score = 0; selectedOption = null;
+    qTotalEl.textContent = QUESTIONS_PER_LEVEL;
+    levelLabel.textContent = `Quiz Dân Gian – Cấp độ ${currentLevel}`;
+    scoreEl.textContent = score;
+    showQuestion();
+    loadQuestion();
+  }
+
+  function loadQuestion(){
+    clearInterval(timerInterval);
+    selectedOption = null;
+    timeLeft = 15; // seconds
+    timerEl.textContent = `${timeLeft}s`;
+    timerInterval = setInterval(()=>{
+      timeLeft--; if(timeLeft<=0){ clearInterval(timerInterval); timerEl.textContent='0s'; handleNoAnswer(); } else timerEl.textContent = timeLeft+ 's';
+    },1000);
+
+    const q = questions[currentIndex];
+    qIndexEl.textContent = currentIndex+1;
+    questionText.textContent = q.question;
+    optionsEl.innerHTML = '';
+    q.options.forEach((opt, idx)=>{
+      const b = document.createElement('button');
+      b.className = 'opt';
+      b.textContent = opt;
+      b.dataset.index = idx;
+      b.addEventListener('click', ()=> selectAnswer(b, idx));
+      optionsEl.appendChild(b);
+    });
+    nextBtn.className = 'next-btn'; nextBtn.disabled = true; nextBtn.textContent='Next';
+  }
+
+  function selectAnswer(btn, idx){
+    if(selectedOption !== null) return;
+    selectedOption = idx;
+    clearInterval(timerInterval);
+    // disable all
+    document.querySelectorAll('.opt').forEach(o=>o.classList.add('disabled'));
+    const q = questions[currentIndex];
+    const correct = q.correct;
+    if(idx === correct){
+      btn.classList.add('correct'); score++; scoreEl.textContent = score;
+    } else {
+      btn.classList.add('wrong');
+      // show correct option
+      const opts = document.querySelectorAll('.opt');
+      opts.forEach(o=>{ if(parseInt(o.dataset.index,10)===correct) o.classList.add('correct'); })
+    }
+    nextBtn.classList.add('enabled'); nextBtn.disabled = false; nextBtn.textContent = currentIndex < QUESTIONS_PER_LEVEL-1 ? 'Next' : 'Xem kết quả';
+  }
+
+  function handleNoAnswer(){
+    // treat as wrong, show correct answer
+    document.querySelectorAll('.opt').forEach(o=>o.classList.add('disabled'));
+    const q = questions[currentIndex];
+    const correct = q.correct;
+    const opts = document.querySelectorAll('.opt');
+    opts.forEach(o=>{ if(parseInt(o.dataset.index,10)===correct) o.classList.add('correct'); })
+    nextBtn.classList.add('enabled'); nextBtn.disabled = false; nextBtn.textContent = currentIndex < QUESTIONS_PER_LEVEL-1 ? 'Next' : 'Xem kết quả';
+  }
+
+  nextBtn.addEventListener('click', ()=>{
+    if(nextBtn.disabled) return;
+    if(currentIndex < QUESTIONS_PER_LEVEL-1){ currentIndex++; loadQuestion(); } else {
+      // finish level
+      showLevelResult();
+    }
+  });
+
+  function showLevelResult(){
+    clearInterval(timerInterval);
+    showResult();
+    finalScore.textContent = `${score}/${QUESTIONS_PER_LEVEL}`;
+    const pass = score >= 7;
+    if(currentLevel === 3 && pass){
+      resultMsg.innerHTML = `🎉 Chúc mừng! Bạn đã hoàn thành toàn bộ Quiz Dân Gian Việt Nam!`;
+      nextLevelBtn.style.display='none';
+    } else {
+      resultMsg.textContent = pass ? 'Bạn qua màn!' : 'Thử lại nhé!';
+      nextLevelBtn.style.display = pass && currentLevel < 3 ? 'inline-block' : 'none';
+    }
+  }
+
+  replayBtn.addEventListener('click', ()=>{
+    // replay current level
+    questions = getQuestionsForLevel(currentLevel);
+    currentIndex = 0; score = 0; scoreEl.textContent = score; showQuestion(); loadQuestion();
+  });
+
+  nextLevelBtn.addEventListener('click', ()=>{
+    if(currentLevel < 3){ currentLevel++; selectLevel.value = currentLevel; questions = getQuestionsForLevel(currentLevel); currentIndex=0; score=0; scoreEl.textContent = score; levelLabel.textContent = `Quiz Dân Gian – Cấp độ ${currentLevel}`; showQuestion(); loadQuestion(); }
+  });
+
+  homeBtn.addEventListener('click', ()=>{ showStart(); });
+
+  startBtn.addEventListener('click', ()=>{ startGame(); });
+
+  // init
+  showStart();
+</script>
+</body>
+</html>
